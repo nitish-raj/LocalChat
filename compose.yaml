@@ -9,9 +9,8 @@ services:
       - open-webui:/app/backend/data
     environment:
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+    restart: always
     deploy:
-      restart_policy:
-        condition: always
       resources:
         reservations:
           devices:
@@ -52,9 +51,12 @@ services:
 volumes:
   ollama:
     name: ollama
+    external: true
   open-webui:
     name: open-webui
+    external: true
   searxng:
     name: searxng
   pipelines:
-    name: pipelines 
+    name: pipelines
+    external: true
