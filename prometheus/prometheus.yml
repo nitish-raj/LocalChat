@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 15s # How frequently to scrape targets
+
+scrape_configs:
+  - job_name: 'cadvisor'
+    # Scrape metrics from the cAdvisor service within our Docker network
+    static_configs:
+      - targets: ['cadvisor:8080']

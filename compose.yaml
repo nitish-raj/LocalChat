@@ -11,10 +11,15 @@ services:
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       ENABLE_RAG_WEB_SEARCH: True
       RAG_WEB_SEARCH_ENGINE: "searxng"
-      # RAG_WEB_SEARCH_RESULT_COUNT: 3  # Optional, defaults likely fine
-      # RAG_WEB_SEARCH_CONCURRENT_REQUESTS: 10 # Optional, defaults likely fine
       SEARXNG_QUERY_URL: "http://searxng:8080/search?q=<query>"
+      # Correct variables for Playwright integration:
+      WEB_LOADER_ENGINE: playwright
+      PLAYWRIGHT_WS_URL: ws://playwright:3000
     restart: always
+    networks:
+      - localchat
+    extra_hosts:
+      - host.docker.internal:host-gateway
     deploy:
       resources:
         reservations:
@@ -22,12 +27,17 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+    logging: &loki-logging
+      driver: loki
+      options:
+        loki-url: "http://loki:3100/loki/api/v1/push"
+        labels: "service={{.Name}}"
 
   searxng:
     image: docker.io/searxng/searxng:latest
     container_name: searxng
     ports:
-      - "8080:8080" # Allow access from other containers on the network
+      - "8080:8080"
     volumes:
       - ./searxng-instance/searxng:/etc/searxng:rw
     environment:
@@ -39,23 +49,25 @@ services:
     restart: unless-stopped
     networks:
       - localchat
-    cap_drop:
-      - ALL
+    # cap_drop:
+    #   - ALL
     cap_add:
       - CHOWN
       - SETGID
       - SETUID
       - DAC_OVERRIDE
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "1m"
-        max-file: "1"
+    logging: *loki-logging
 
   caddy:
     container_name: caddy
     image: docker.io/library/caddy:2-alpine
-    network_mode: host
+    networks:
+      - localchat
+    ports:
+      - "80:80"
+      - "443:443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
@@ -68,17 +80,17 @@ services:
       - ALL
     cap_add:
       - NET_BIND_SERVICE
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "1m"
-        max-file: "1"
+    logging: *loki-logging
+
   apache-tika:
     image: apache/tika:latest-full
     container_name: apache-tika
     ports:
       - "9998:9998"
     restart: always
+    networks:
+      - localchat
+    logging: *loki-logging
 
   pipelines:
     image: ghcr.io/open-webui/pipelines:main
@@ -92,6 +104,7 @@ services:
     restart: always
     networks:
       - localchat
+    logging: *loki-logging
 
   redis:
     container_name: redis
@@ -108,11 +121,87 @@ services:
       - SETGID
       - SETUID
       - DAC_OVERRIDE
+    logging: *loki-logging
+
+  loki:
+    image: grafana/loki:3.5.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config:/etc/loki
+      - loki-data:/loki
+    command: -config.file=/etc/loki/loki-local-config.yaml
+    restart: unless-stopped
+    networks:
+      - localchat
     logging:
       driver: "json-file"
       options:
         max-size: "1m"
         max-file: "1"
+
+  grafana:
+    image: grafana/grafana:11.6.1
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+    networks:
+      - localchat
+    logging: *loki-logging
+
+  prometheus:
+    image: prom/prometheus:v3.3.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    restart: unless-stopped
+    networks:
+      - localchat
+    logging: *loki-logging
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.52.1
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    privileged: true # Required for cAdvisor to access Docker host info
+    restart: unless-stopped
+    networks:
+      - localchat
+    logging: *loki-logging
+
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.49.1-noble # Version must match requirements.txt
+    container_name: playwright
+    command: npx -y playwright@1.49.1 run-server --port 3000 --host 0.0.0.0
+    # Add network, restart policy, logging etc. if needed
+    networks:
+      - localchat
+    restart: unless-stopped
+    logging: *loki-logging # Optional: Send logs to Loki
 
 volumes:
   ollama:
@@ -128,14 +217,16 @@ volumes:
     external: true
   redis-data:
     name: redis-data
-    external: false
   caddy-data:
     name: caddy-data
-    external: false
   caddy-config:
     name: caddy-config
-    external: false
-  
+  loki-data:
+    name: loki-data
+  grafana-data:
+    name: grafana-data
+  prometheus-data:
+    name: prometheus-data
 
 networks:
   localchat:
