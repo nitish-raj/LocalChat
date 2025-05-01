@@ -1,4 +1,27 @@
 services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    volumes:
+      - ollama:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - localchat
+    restart: unless-stopped
+    deploy: 
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://loki:3100/loki/api/v1/push"
+        labels: "service={{.Name}}"
+
   open-webui:
     image: ghcr.io/open-webui/open-webui
     container_name: open-webui
@@ -12,7 +35,6 @@ services:
       ENABLE_RAG_WEB_SEARCH: True
       RAG_WEB_SEARCH_ENGINE: "searxng"
       SEARXNG_QUERY_URL: "http://searxng:8080/search?q=<query>"
-      # Correct variables for Playwright integration:
       WEB_LOADER_ENGINE: playwright
       PLAYWRIGHT_WS_URL: ws://playwright:3000
     restart: always
@@ -49,8 +71,8 @@ services:
     restart: unless-stopped
     networks:
       - localchat
-    # cap_drop:
-    #   - ALL
+    cap_drop:
+      - ALL
     cap_add:
       - CHOWN
       - SETGID
@@ -187,7 +209,7 @@ services:
       - /dev/disk/:/dev/disk:ro
     devices:
       - /dev/kmsg
-    privileged: true # Required for cAdvisor to access Docker host info
+    privileged: true
     restart: unless-stopped
     networks:
       - localchat
@@ -197,16 +219,14 @@ services:
     image: mcr.microsoft.com/playwright:v1.49.1-noble # Version must match requirements.txt
     container_name: playwright
     command: npx -y playwright@1.49.1 run-server --port 3000 --host 0.0.0.0
-    # Add network, restart policy, logging etc. if needed
     networks:
       - localchat
     restart: unless-stopped
-    logging: *loki-logging # Optional: Send logs to Loki
+    logging: *loki-logging 
 
 volumes:
   ollama:
     name: ollama
-    external: true
   open-webui:
     name: open-webui
     external: true

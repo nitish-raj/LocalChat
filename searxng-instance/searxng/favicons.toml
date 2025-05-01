@@ -12,4 +12,4 @@ LIMIT_TOTAL_BYTES = 2147483648                 # 2 GB / default: 50 MB
 # MAINTENANCE_PERIOD = 600                       # 10min / default: 1h
 
 [favicons.proxy.resolver_map]
-"google.com" = "searx.favicons.resolvers.google"
+"google" = "searx.favicons.resolvers.google"
