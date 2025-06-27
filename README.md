@@ -88,7 +88,7 @@ LocalChat/
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/your-username/LocalChat.git
+   git clone https://github.com/nitish-raj/LocalChat.git
    cd LocalChat
    ```
 
@@ -226,9 +226,9 @@ LocalChat includes comprehensive monitoring out of the box:
 
 ### Getting Help
 
-- **Issues**: Report bugs and feature requests on [GitHub Issues](https://github.com/your-username/LocalChat/issues)
-- **Discussions**: Join community discussions on [GitHub Discussions](https://github.com/your-username/LocalChat/discussions)
-- **Documentation**: Check the [Wiki](https://github.com/your-username/LocalChat/wiki) for detailed guides
+- **Issues**: Report bugs and feature requests on [GitHub Issues](https://github.com/nitish-raj/LocalChat/issues)
+- **Discussions**: Join community discussions on [GitHub Discussions](https://github.com/nitish-raj/LocalChat/discussions)
+- **Documentation**: Check the [Wiki](https://github.com/nitish-raj/LocalChat/wiki) for detailed guides
 
 ## 🤝 Contributing
 
