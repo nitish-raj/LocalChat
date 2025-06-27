@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🤖 LocalChat
+# 🤖 LocalAI Hub
 
-**A Complete Self-Hosted AI Chat Platform with Integrated Search & Monitoring**
+**A Complete Self-Hosted AI Platform with Integrated Chat, Search & Monitoring**
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://docs.docker.com/compose/)
@@ -28,7 +28,7 @@
 
 ## 🏗️ Architecture
 
-LocalChat consists of multiple integrated services:
+LocalAI Hub consists of multiple integrated services:
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -54,7 +54,7 @@ LocalChat consists of multiple integrated services:
 ## 📁 Project Structure
 
 ```
-LocalChat/
+LocalAI-Hub/
 ├── compose.yaml                    # Main Docker Compose configuration
 ├── update-and-start.sh            # Automated update and startup script
 ├── Caddyfile                      # Reverse proxy configuration
@@ -88,8 +88,8 @@ LocalChat/
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/nitish-raj/LocalChat.git
-   cd LocalChat
+   git clone https://github.com/nitish-raj/LocalAI-Hub.git
+   cd LocalAI-Hub
    ```
 
 2. **Configure environment variables** (optional):
@@ -176,15 +176,15 @@ docker exec -it pipelines /bin/bash
 ### Backup & Restore
 ```bash
 # Backup volumes
-docker run --rm -v localchat_ollama:/data -v $(pwd):/backup alpine tar czf /backup/ollama-backup.tar.gz -C /data .
+docker run --rm -v ollama:/data -v $(pwd):/backup alpine tar czf /backup/ollama-backup.tar.gz -C /data .
 
 # Restore volumes
-docker run --rm -v localchat_ollama:/data -v $(pwd):/backup alpine tar xzf /backup/ollama-backup.tar.gz -C /data
+docker run --rm -v ollama:/data -v $(pwd):/backup alpine tar xzf /backup/ollama-backup.tar.gz -C /data
 ```
 
 ## 📊 Monitoring
 
-LocalChat includes comprehensive monitoring out of the box:
+LocalAI Hub includes comprehensive monitoring out of the box:
 
 - **System Metrics**: CPU, memory, disk usage via cAdvisor
 - **Application Logs**: Centralized logging with Loki
@@ -226,9 +226,9 @@ LocalChat includes comprehensive monitoring out of the box:
 
 ### Getting Help
 
-- **Issues**: Report bugs and feature requests on [GitHub Issues](https://github.com/nitish-raj/LocalChat/issues)
-- **Discussions**: Join community discussions on [GitHub Discussions](https://github.com/nitish-raj/LocalChat/discussions)
-- **Documentation**: Check the [Wiki](https://github.com/nitish-raj/LocalChat/wiki) for detailed guides
+- **Issues**: Report bugs and feature requests on [GitHub Issues](https://github.com/nitish-raj/LocalAI-Hub/issues)
+- **Discussions**: Join community discussions on [GitHub Discussions](https://github.com/nitish-raj/LocalAI-Hub/discussions)
+- **Documentation**: Check the [Wiki](https://github.com/nitish-raj/LocalAI-Hub/wiki) for detailed guides
 
 ## 🤝 Contributing
 
@@ -255,7 +255,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## 🙏 Acknowledgments
 
-LocalChat is built on the shoulders of amazing open-source projects:
+LocalAI Hub is built on the shoulders of amazing open-source projects:
 
 - **[Open WebUI](https://github.com/open-webui/open-webui)** - Modern AI chat interface
 - **[Ollama](https://github.com/ollama/ollama)** - Local AI model runtime
@@ -268,7 +268,7 @@ LocalChat is built on the shoulders of amazing open-source projects:
 
 ## 🌟 Star History
 
-If you find LocalChat useful, please consider giving it a star! ⭐
+If you find LocalAI Hub useful, please consider giving it a star! ⭐
 
 ---
 
@@ -276,6 +276,6 @@ If you find LocalChat useful, please consider giving it a star! ⭐
 
 **Made with ❤️ for the open-source community**
 
-[Report Bug](https://github.com/nitish-raj/LocalChat/issues) · [Request Feature](https://github.com/nitish-raj/LocalChat/issues) · [Documentation](https://github.com/nitish-raj/LocalChat/wiki)
+[Report Bug](https://github.com/nitish-raj/LocalAI-Hub/issues) · [Request Feature](https://github.com/nitish-raj/LocalAI-Hub/issues) · [Documentation](https://github.com/nitish-raj/LocalAI-Hub/wiki)
 
 </div>
