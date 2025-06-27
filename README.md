@@ -276,6 +276,6 @@ If you find LocalChat useful, please consider giving it a star! ⭐
 
 **Made with ❤️ for the open-source community**
 
-[Report Bug](https://github.com/your-username/LocalChat/issues) · [Request Feature](https://github.com/your-username/LocalChat/issues) · [Documentation](https://github.com/your-username/LocalChat/wiki)
+[Report Bug](https://github.com/nitish-raj/LocalChat/issues) · [Request Feature](https://github.com/nitish-raj/LocalChat/issues) · [Documentation](https://github.com/nitish-raj/LocalChat/wiki)
 
 </div>
