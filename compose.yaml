@@ -9,7 +9,12 @@ services:
     networks:
       - localchat
     restart: unless-stopped
-    deploy: 
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
       resources:
         reservations:
           devices:
@@ -19,7 +24,7 @@ services:
     logging:
       driver: loki
       options:
-        loki-url: "http://loki:3100/loki/api/v1/push"
+        loki-url: ${LOKI_URL:-http://localhost:3100/loki/api/v1/push}
         labels: "service={{.Name}}"
 
   open-webui:
@@ -31,17 +36,17 @@ services:
       - ollama:/root/.ollama
       - open-webui:/app/backend/data
     environment:
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      ENABLE_RAG_WEB_SEARCH: True
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      ENABLE_RAG_WEB_SEARCH: "true"
       RAG_WEB_SEARCH_ENGINE: "searxng"
       SEARXNG_QUERY_URL: "http://searxng:8080/search?q=<query>"
       WEB_LOADER_ENGINE: playwright
       PLAYWRIGHT_WS_URL: ws://playwright:3000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: always
     networks:
       - localchat
-    extra_hosts:
-      - host.docker.internal:host-gateway
     deploy:
       resources:
         reservations:
@@ -49,10 +54,15 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-    logging: &loki-logging
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
       driver: loki
       options:
-        loki-url: "http://loki:3100/loki/api/v1/push"
+        loki-url: ${LOKI_URL:-http://localhost:3100/loki/api/v1/push}
         labels: "service={{.Name}}"
 
   searxng:
@@ -61,7 +71,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./searxng-instance/searxng:/etc/searxng:rw
+      - searxng:/etc/searxng:rw
     environment:
       - INSTANCE_NAME=searxng-instance
       - UWSGI_WORKERS=${SEARXNG_UWSGI_WORKERS:-4}
@@ -78,31 +88,44 @@ services:
       - SETGID
       - SETUID
       - DAC_OVERRIDE
-    logging: *loki-logging
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: loki
+      options:
+        loki-url: ${LOKI_URL:-http://localhost:3100/loki/api/v1/push}
+        labels: "service={{.Name}}"
 
   caddy:
-    container_name: caddy
     image: docker.io/library/caddy:2-alpine
-    networks:
-      - localchat
+    container_name: caddy
     ports:
       - "80:80"
       - "443:443"
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    restart: unless-stopped
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data:rw
-      - caddy-config:/config:rw
     environment:
       - SEARXNG_HOSTNAME=${SEARXNG_HOSTNAME:-http://localhost}
       - SEARXNG_TLS=${LETSENCRYPT_EMAIL:-internal}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+    networks:
+      - localchat
     cap_drop:
       - ALL
     cap_add:
       - NET_BIND_SERVICE
-    logging: *loki-logging
+    logging:
+      driver: loki
+      options:
+        loki-url: ${LOKI_URL:-http://localhost:3100/loki/api/v1/push}
+        labels: "service={{.Name}}"
 
   apache-tika:
     image: apache/tika:latest-full
@@ -112,7 +135,11 @@ services:
     restart: always
     networks:
       - localchat
-    logging: *loki-logging
+    logging:
+      driver: loki
+      options:
+        loki-url: ${LOKI_URL:-http://localhost:3100/loki/api/v1/push}
+        labels: "service={{.Name}}"
 
   pipelines:
     image: ghcr.io/open-webui/pipelines:main
@@ -121,16 +148,18 @@ services:
       - "9099:9099"
     volumes:
       - pipelines:/app/pipelines
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     restart: always
     networks:
       - localchat
-    logging: *loki-logging
+    logging:
+      driver: loki
+      options:
+        loki-url: ${LOKI_URL:-http://localhost:3100/loki/api/v1/push}
+        labels: "service={{.Name}}"
 
   redis:
-    container_name: redis
     image: docker.io/valkey/valkey:8-alpine
+    container_name: redis
     command: valkey-server --save 30 1 --loglevel warning
     restart: unless-stopped
     networks:
@@ -143,7 +172,11 @@ services:
       - SETGID
       - SETUID
       - DAC_OVERRIDE
-    logging: *loki-logging
+    logging:
+      driver: loki
+      options:
+        loki-url: ${LOKI_URL:-http://localhost:3100/loki/api/v1/push}
+        labels: "service={{.Name}}"
 
   loki:
     image: grafana/loki:3.5.0
@@ -151,56 +184,24 @@ services:
     ports:
       - "3100:3100"
     volumes:
-      - ./loki-config:/etc/loki
       - loki-data:/loki
-    command: -config.file=/etc/loki/loki-local-config.yaml
+      - ./loki-config:/etc/loki:ro
+    command: -config.file=/etc/loki/local-config.yaml
     restart: unless-stopped
     networks:
       - localchat
     logging:
-      driver: "json-file"
+      driver: loki
       options:
-        max-size: "1m"
-        max-file: "1"
-
-  grafana:
-    image: grafana/grafana:11.6.1
-    container_name: grafana
-    ports:
-      - "3001:3000"
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./grafana-provisioning:/etc/grafana/provisioning
-    environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
-      - GF_USERS_ALLOW_SIGN_UP=false
-    restart: unless-stopped
-    networks:
-      - localchat
-    logging: *loki-logging
-
-  prometheus:
-    image: prom/prometheus:v3.3.0
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus:/etc/prometheus
-      - prometheus-data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-    restart: unless-stopped
-    networks:
-      - localchat
-    logging: *loki-logging
+        loki-url: ${LOKI_URL:-http://localhost:3100/loki/api/v1/push}
+        labels: "service={{.Name}}"
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.52.1
     container_name: cadvisor
+    # Changed host port to avoid conflict with searxng
+    ports:
+      - "8081:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -213,44 +214,119 @@ services:
     restart: unless-stopped
     networks:
       - localchat
-    logging: *loki-logging
+    logging:
+      driver: loki
+      options:
+        loki-url: ${LOKI_URL:-http://localhost:3100/loki/api/v1/push}
+        labels: "service={{.Name}}"
 
-  playwright:
-    image: mcr.microsoft.com/playwright:v1.49.1-noble # Version must match requirements.txt
-    container_name: playwright
-    command: npx -y playwright@1.49.1 run-server --port 3000 --host 0.0.0.0
+  grafana:
+    image: grafana/grafana:11.6.1
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning:ro
+    restart: unless-stopped
     networks:
       - localchat
+    logging:
+      driver: loki
+      options:
+        loki-url: ${LOKI_URL:-http://localhost:3100/loki/api/v1/push}
+        labels: "service={{.Name}}"
+
+  prometheus:
+    image: prom/prometheus:v3.3.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus-data:/prometheus
+      - ./prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
     restart: unless-stopped
-    logging: *loki-logging 
+    networks:
+      - localchat
+    logging:
+      driver: loki
+      options:
+        loki-url: ${LOKI_URL:-http://localhost:3100/loki/api/v1/push}
+        labels: "service={{.Name}}"
+
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.49.1-noble
+    container_name: playwright
+    command: npx playwright@1.49.1 run-server --port 3000 --host 0.0.0.0
+    restart: unless-stopped
+    networks:
+      - localchat
+    logging:
+      driver: loki
+      options:
+        loki-url: ${LOKI_URL:-http://localhost:3100/loki/api/v1/push}
+        labels: "service={{.Name}}"
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    ports:
+      - "6333:6333"
+    environment:
+      - QDRANT__SERVICE__HSTS_ENABLED=false
+      - QDRANT__SERVICE__HSTS_MAX_AGE=0
+    volumes:
+      - qdrant-data:/qdrant/storage
+    restart: unless-stopped
+    networks:
+      - localchat
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: loki
+      options:
+        loki-url: ${LOKI_URL:-http://localhost:3100/loki/api/v1/push}
+        labels: "service={{.Name}}"
 
 volumes:
   ollama:
     name: ollama
   open-webui:
-    name: open-webui
     external: true
+    name: open-webui
   searxng:
     name: searxng
   pipelines:
-    name: pipelines
     external: true
+    name: pipelines
   redis-data:
     name: redis-data
   caddy-data:
     name: caddy-data
   caddy-config:
     name: caddy-config
-  loki-data:
-    name: loki-data
   grafana-data:
     name: grafana-data
   prometheus-data:
     name: prometheus-data
+  qdrant-data:
+    name: qdrant-data
+  loki-data:
+    name: loki-data
 
 networks:
   localchat:
     name: localchat
     driver: bridge
-    driver_opts:
-      com.docker.network.bridge.name: localchat
