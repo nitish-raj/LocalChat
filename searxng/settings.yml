@@ -538,6 +538,7 @@ engines:
     # add "list" to the array to get results in the results list
     display_type: ["infobox"]
     categories: [general]
+    disabled: true
 
   - name: bilibili
     engine: bilibili
