@@ -6,3 +6,36 @@ scrape_configs:
     # Scrape metrics from the cAdvisor service within our Docker network
     static_configs:
       - targets: ['cadvisor:8080']
+  - job_name: 'ollama'
+    static_configs:
+      - targets: ['ollama:11434']
+  - job_name: 'searxng'
+    static_configs:
+      - targets: ['searxng:8080']
+  - job_name: 'caddy'
+    static_configs:
+      - targets: ['caddy:2019']
+  - job_name: 'tika'
+    static_configs:
+      - targets: ['tika:9998']
+  - job_name: 'pipelines'
+    static_configs:
+      - targets: ['pipelines:9099']
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['loki:3100']
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['prometheus:9090']
+  - job_name: 'qdrant'
+    static_configs:
+      - targets: ['qdrant:6333']
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']

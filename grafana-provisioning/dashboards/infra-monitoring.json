@@ -34,7 +34,21 @@
       },
       "fieldConfig": {
         "defaults": {
-          "mappings": [],
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "DOWN"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "UP"
+                }
+              },
+              "type": "value"
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -51,7 +65,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 5,
         "w": 24,
         "x": 0,
         "y": 0
@@ -99,7 +113,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "CPU Usage (%)",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -148,7 +162,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 5
       },
       "id": 2,
       "options": {
@@ -162,12 +176,13 @@
           "hideZeros": false,
           "mode": "multi",
           "sort": "none"
-        }
+        },
+        "unit": "percent"
       },
       "pluginVersion": "12.0.2",
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{image!=\"\"}[5m])) by (name)",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{image!=\"\"}[5m])) by (name) * 100",
           "legendFormat": "{{name}}",
           "refId": "A"
         }
@@ -189,7 +204,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "Memory Usage (MB)",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -238,7 +253,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 15
       },
       "id": 3,
       "options": {
@@ -253,7 +268,7 @@
           "mode": "multi",
           "sort": "none"
         },
-        "unit": "bytes"
+        "unit": "megabytes"
       },
       "pluginVersion": "12.0.2",
       "targets": [
@@ -280,7 +295,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "Network I/O (MB/s)",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -329,7 +344,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 27
+        "y": 25
       },
       "id": 4,
       "options": {
@@ -344,7 +359,7 @@
           "mode": "multi",
           "sort": "none"
         },
-        "unit": "bytes/sec"
+        "unit": "mbytes/sec"
       },
       "pluginVersion": "12.0.2",
       "targets": [
@@ -364,7 +379,7 @@
     }
   ],
   "preload": false,
-  "refresh": "5s",
+  "refresh": "auto",
   "schemaVersion": 41,
   "tags": [],
   "templating": {
