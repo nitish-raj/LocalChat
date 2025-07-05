@@ -42,6 +42,19 @@ services:
       - "./env/openwebui.env"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      - ollama
+      - redis
+      - pipelines
+      - qdrant
+      - tika
+      - searxng
+      - loki
+      - prometheus
+      - grafana
+      - caddy
+      - playwright
+      - cadvisor
     restart: unless-stopped
     networks:
       - localai-hub
@@ -160,6 +173,12 @@ services:
       - SETGID
       - SETUID
       - DAC_OVERRIDE
+    healthcheck:
+      test: "[ $$(valkey-cli ping) = 'PONG' ]"
+      start_period: 5s
+      interval: 1s
+      timeout: 3s
+      retries: 5
     logging: *loki-logging
 
   loki:
