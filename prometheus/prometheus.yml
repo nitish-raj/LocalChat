@@ -23,7 +23,7 @@ scrape_configs:
       - targets: ['pipelines:9099']
   - job_name: 'redis'
     static_configs:
-      - targets: ['redis:6379']
+      - targets: ['redis-exporter:9121']
   - job_name: 'loki'
     static_configs:
       - targets: ['loki:3100']

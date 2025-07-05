@@ -59,6 +59,7 @@ services:
       - playwright
       - cadvisor
       - postgres
+      - redis-exporter
     restart: unless-stopped
     networks:
       - localai-hub
@@ -190,6 +191,32 @@ services:
       timeout: 3s
       retries: 5
     logging: *loki-logging
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: redis-exporter
+    command:
+      - --redis.addr=redis://redis:6379 
+      - --web.listen-address=:9121
+      - --web.telemetry-path=/metrics
+      - --namespace=redis
+      - --export-client-list
+      - --export-client-port
+      - --include-system-metrics
+    ports:
+      - "9121:9121"
+    restart: unless-stopped
+    networks:
+      - localai-hub
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9121/metrics"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: *loki-logging
+
 
   loki:
     image: grafana/loki:3.5.1
