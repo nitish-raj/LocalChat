@@ -55,6 +55,7 @@ services:
       - caddy
       - playwright
       - cadvisor
+      - postgres
     restart: unless-stopped
     networks:
       - localai-hub
@@ -279,6 +280,25 @@ services:
       retries: 3
     logging: *loki-logging
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    env_file:
+      - ./env/postgres.env
+    networks:
+      - localai-hub
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *loki-logging
+
 volumes:
   ollama:
     name: ollama
@@ -302,6 +322,8 @@ volumes:
     name: qdrant-data
   loki-data:
     name: loki-data
+  postgres-data:
+    name: postgres-data
 
 networks:
   localai-hub:
