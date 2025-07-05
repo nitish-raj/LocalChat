@@ -89,6 +89,7 @@ services:
       - "./env/searxng.env"
     depends_on:
       - redis
+      - sysctl-setter
     restart: unless-stopped
     networks:
       - localai-hub
@@ -169,10 +170,17 @@ services:
       start_period: 30s
     logging: *loki-logging
 
+  sysctl-setter:
+    image: alpine:latest
+    container_name: sysctl-setter
+    privileged: true
+    command: sh -c "sysctl -w vm.overcommit_memory=1"
+
   redis:
     image: docker.io/valkey/valkey:8-alpine
     container_name: redis
-    command: valkey-server --save 30 1 --loglevel warning
+    privileged: true
+    command: sh -c "sysctl -w vm.overcommit_memory=1 && valkey-server --save 30 1 --loglevel warning"
     restart: unless-stopped
     networks:
       - localai-hub
@@ -184,6 +192,8 @@ services:
       - SETGID
       - SETUID
       - DAC_OVERRIDE
+    depends_on:
+      - sysctl-setter
     healthcheck:
       test: ["CMD-SHELL", "valkey-cli ping | grep -q PONG"]
       start_period: 5s
