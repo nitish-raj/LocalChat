@@ -175,6 +175,8 @@ services:
     container_name: sysctl-setter
     privileged: true
     command: sh -c "sysctl -w vm.overcommit_memory=1"
+    networks:
+      - localai-hub
 
   redis:
     image: docker.io/valkey/valkey:8-alpine
@@ -324,7 +326,7 @@ services:
     logging: *loki-logging
 
   playwright:
-    image: mcr.microsoft.com/playwright:v1.53.2-noble
+    image: mcr.microsoft.com/playwright:v1.49.1-noble
     container_name: playwright
     command: npx playwright@1.49.1 run-server --port 3000 --host 0.0.0.0
     restart: unless-stopped
